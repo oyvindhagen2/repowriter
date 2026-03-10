@@ -1,138 +1,137 @@
 # writer
 
-Turn any git repository into a published blog series — automatically.
+Every developer I know has a graveyard of half-built things they never wrote about.
 
-`writer` reads your commit history, designs a multi-part narrative, generates polished articles using Claude, creates AI cover images, and publishes everything to Dev.to. One tool, zero boilerplate.
+Not because they weren't proud of them. Not because they didn't have anything to say. But because writing is a separate skill from building, it lives in a separate tool, and after the hard part is done the last thing you want to do is context-switch into a blank document and explain yourself.
 
-```
+`writer` is an attempt to close that gap. Point it at any git repository. It reads your commit history — the actual record of decisions made, directions changed, things that didn't work — and turns it into a multi-part narrative series. Then it generates cover images. Then it publishes everything to Dev.to, with state tracking so reruns don't create duplicates.
+
+Your commits already tell a story. This just writes it down.
+
+---
+
+## The meta problem
+
+This tool was built to document a different project. That project had hundreds of commits across six months — architecture decisions, wrong turns, things rebuilt twice. The kind of project that *deserves* a write-up but will never get one the normal way because normal writing is too slow and too separate from the work itself.
+
+The insight was simple: git log is a structured record of everything you did and when you did it. The diff tells you what changed. The commit message tells you why. The sequence tells you the shape of the thinking. That's most of a blog post already. What's missing is the narrative voice, the context a reader needs, and the honest reflection on what worked.
+
+Claude can provide those things. The git log can't be fabricated. The combination turns out to be surprisingly readable.
+
+---
+
+## What it actually does
+
+```bash
 python3 generate_blog.py --repo /path/to/your/project --plan
+```
+
+This reads your entire commit history, infers themes and turning points, and designs a chapter structure — not a commit-by-commit recap, but an actual narrative arc. The output is a `series_plan.json` you can edit before generating anything. The plan is the most important part. Shape it.
+
+```bash
 python3 generate_blog.py --repo /path/to/your/project --generate all
+```
+
+Each article comes out at roughly 2000–2500 words. It knows to use `{% card %}` for key insights, `{% details %}` for dead-end code that's instructive but not central, proper code fence languages, no H1 in the body because that comes from frontmatter. It produces Dev.to-ready markdown.
+
+```bash
 python3 cover_generator.py --dir posts/my-project
+```
+
+Generates a unique 1000×420 cover image per article via [Pollinations.ai](https://pollinations.ai) — free, no billing, no key. Uploads to a public CDN. Updates the `cover_image` frontmatter field automatically.
+
+```bash
 python3 devto_publisher.py --push-all posts/my-project
 ```
 
----
-
-## What it does
-
-1. **Plans your series** — analyzes your git log and designs a chapter structure that reads like a developer travelogue, not a changelog
-2. **Writes the articles** — generates 2000–2500 word chapters using Claude, with proper code snippets, callouts, and narrative arc
-3. **Makes cover images** — generates unique 1000×420 cover art per article via [Pollinations.ai](https://pollinations.ai) (free, no key needed), uploads to a public CDN
-4. **Publishes everywhere** — pushes to Dev.to with frontmatter, series linking, and state tracking so reruns are idempotent
+Pushes everything to Dev.to as drafts. A state file tracks article IDs so you can run this repeatedly without creating duplicates. Add `--live` to publish immediately.
 
 ---
 
-## Install
+## The pipeline, honestly
 
-```bash
-git clone https://github.com/oyvindhagen2/writer
-cd writer
-pip install anthropic
-```
+It doesn't always work perfectly the first time.
 
-Copy `.env.example` to `.env` and add your keys.
+Pollinations rate-limits aggressively if you hit it too fast — there's a 30-second sleep between articles and a retry loop with backoff. The image generation is genuinely probabilistic; the same prompt returns different images on different days, and sometimes the model backend just fails. The retry logic is more patient than you'd want it to be.
+
+The Dev.to API has a quirk where `published: false` in the body markdown overrides the `published: true` in the API payload — so the publisher rewrites the frontmatter file before pushing when you go live. The draft endpoint returns 404 on the public article route, so syncing drafts back requires hitting `/articles/me/unpublished`. These are the kinds of things you learn by running into them.
+
+The state file pattern ended up being the most useful design decision. Every `article-*.md` file maps to a Dev.to article ID in `devto_state.json`. No more manually tracking which article is which. Reruns are idempotent. Edit locally, push again, it updates.
 
 ---
 
 ## Setup
 
 ```bash
+git clone https://github.com/oyvindhagen2/repowriter
+cd repowriter
+pip install anthropic
 cp .env.example .env
-# Edit .env — add ANTHROPIC_API_KEY and DEVTO_API_KEY
+# Add ANTHROPIC_API_KEY and DEVTO_API_KEY
 ```
 
 Get your keys:
 - **Anthropic**: [console.anthropic.com](https://console.anthropic.com)
 - **Dev.to**: Settings → Account → DEV Community API Keys
 
+The cover generator and publisher have no dependencies beyond the standard library. Only `generate_blog.py` needs the `anthropic` package.
+
 ---
 
-## Usage
+## Full usage
 
-### 1. Plan your series
-
-Point it at any git repository:
+### Plan your series
 
 ```bash
 python3 generate_blog.py --repo /path/to/your/project --plan
 ```
 
-This reads your commit history and writes a `series_plan.json` to the repo's `posts/<project>/` folder. Edit it freely before generating.
-
-Add context about yourself to improve the narrative:
+Add context about yourself — it improves the narrative voice significantly:
 
 ```bash
 python3 generate_blog.py --repo /path/to/your/project --plan \
-  --author-context "solo dev, 10 years in fintech, first big open-source project"
+  --author-context "backend engineer, first time building in public, side project"
 ```
 
-### 2. Check status
+Edit `posts/<project>/series_plan.json` before generating. Change the chapter angles. Rename titles. Add things the git log doesn't know about.
+
+### Generate
 
 ```bash
-python3 generate_blog.py --repo /path/to/your/project --status
-```
-
-### 3. Generate articles
-
-```bash
-python3 generate_blog.py --repo /path/to/your/project --generate next   # one at a time
-python3 generate_blog.py --repo /path/to/your/project --generate all    # whole series
-python3 generate_blog.py --repo /path/to/your/project --generate 3      # specific chapter
+python3 generate_blog.py --repo ... --status                 # what's been written
+python3 generate_blog.py --repo ... --generate next          # one chapter at a time
+python3 generate_blog.py --repo ... --generate 3             # specific chapter
+python3 generate_blog.py --repo ... --generate all           # everything
 ```
 
 #### Audience modes
 
 ```bash
-python3 generate_blog.py --repo ... --generate all --audience public      # default: Dev.to style
-python3 generate_blog.py --repo ... --generate all --audience internal    # team retrospective
-python3 generate_blog.py --repo ... --generate all --audience executive   # non-technical summary
+--audience public       # Dev.to style (default)
+--audience internal     # team retrospective
+--audience executive    # non-technical summary
 ```
 
-### 4. Generate cover images
+### Covers
 
 ```bash
-python3 cover_generator.py --dir posts/my-project           # all articles
-python3 cover_generator.py --file posts/my-project/article-01-*.md  # one article
-python3 cover_generator.py --dir posts/my-project --dry-run # preview prompts
+python3 cover_generator.py --dir posts/my-project --dry-run  # preview prompts first
+python3 cover_generator.py --dir posts/my-project            # generate + upload
+python3 cover_generator.py --dir posts/my-project --force    # regenerate existing
 ```
 
-Cover images are saved locally to `posts/<project>/covers/` and uploaded to [catbox.moe](https://catbox.moe) (free, permanent hosting). The `cover_image` frontmatter field is updated automatically.
-
-Override the generated prompt per-article by adding `image_prompt` to your frontmatter:
+Override the generated prompt per-article via frontmatter:
 
 ```yaml
----
-title: My article
 image_prompt: glowing neural network dissolving into raindrops, dark cinematic
----
 ```
 
-### 5. Publish to Dev.to
+### Publish
 
 ```bash
-python3 devto_publisher.py --push-all posts/my-project         # push all as drafts
-python3 devto_publisher.py --push-all posts/my-project --live  # publish immediately
-python3 devto_publisher.py --pull-all posts/my-project         # sync back from Dev.to
-```
-
-State is tracked in `posts/<project>/devto_state.json` — reruns only update what changed.
-
----
-
-## Article frontmatter
-
-Articles use standard Dev.to frontmatter:
-
-```yaml
----
-title: The thing I built and why it nearly broke me
-published: false
-description: One sentence that makes someone click.
-tags: python, webdev, opensource
-series: Building My Thing
-cover_image: https://...
-image_prompt: optional custom image generation prompt
----
+python3 devto_publisher.py --push-all posts/my-project         # drafts
+python3 devto_publisher.py --push-all posts/my-project --live  # publish
+python3 devto_publisher.py --pull-all posts/my-project         # sync from Dev.to
 ```
 
 ---
@@ -142,32 +141,26 @@ image_prompt: optional custom image generation prompt
 ```
 posts/
   my-project/
-    series_plan.json        ← edit this to shape your narrative
+    series_plan.json        ← edit this before generating
     article-01-*.md
     article-02-*.md
     ...
     covers/
       article-01.png
       article-02.png
-      ...
-    devto_state.json        ← auto-managed, tracks Dev.to article IDs
+    devto_state.json        ← auto-managed
 ```
 
 ---
 
 ## Cover image engines
 
-| Engine | Cost | Quality | Notes |
-|--------|------|---------|-------|
-| `pollinations` | Free | Good | Default. Flux model via pollinations.ai |
-| `imagen4` | Paid | Excellent | Google Imagen 4 — requires billing |
-| `gemini` | Paid | Good | gemini-2.5-flash-image |
-| `auto` | Free → Paid | Best available | Tries Imagen 4, falls back to Pollinations |
-
-```bash
-python3 cover_generator.py --dir posts/my-project --engine pollinations
-python3 cover_generator.py --dir posts/my-project --engine imagen4
-```
+| Engine | Cost | Notes |
+|--------|------|-------|
+| `pollinations` | Free | Flux model. Default. |
+| `imagen4` | Paid | Google Imagen 4. Requires billing. |
+| `gemini` | Paid | gemini-2.5-flash-image. |
+| `auto` | Free → Paid | Tries Imagen 4, falls back to Pollinations. |
 
 ---
 
@@ -175,19 +168,15 @@ python3 cover_generator.py --dir posts/my-project --engine imagen4
 
 - Python 3.10+
 - `pip install anthropic`
-- Git (for commit history analysis)
-- A Dev.to account (free)
-
-No other dependencies. The cover generator and publisher use only the standard library.
+- Git
 
 ---
 
-## Tips
+## The thing it can't do
 
-- **Edit `series_plan.json`** before generating — the plan is the most important input. Add context, adjust chapter angles, rename titles.
-- **Generate one at a time** with `--generate next` and read each article before continuing. It's easier to course-correct early.
-- **Use `--dry-run`** on the cover generator to preview what prompts will be sent before burning API quota.
-- **The state file is your friend** — `devto_state.json` means you can run `--push-all` repeatedly without creating duplicates.
+It can't replace your judgment about whether something is worth writing about, or whether the angle the planner chose is actually the interesting one. Read the `series_plan.json` before generating. The plan is a hypothesis about what your project's story is. You know if it's right.
+
+The articles it produces are good first drafts, not finished pieces. They'll be close, but they're not you. Edit them.
 
 ---
 
