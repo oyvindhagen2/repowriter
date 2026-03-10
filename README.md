@@ -1,5 +1,7 @@
 # writer
 
+[![GitHub Sponsors](https://img.shields.io/github/sponsors/oyvindhagen2?style=flat&logo=githubsponsors&color=ea4aaa)](https://github.com/sponsors/oyvindhagen2)
+
 Every developer I know has a graveyard of half-built things they never wrote about.
 
 Not because they weren't proud of them. Not because they didn't have anything to say. But because writing is a separate skill from building, it lives in a separate tool, and after the hard part is done the last thing you want to do is context-switch into a blank document and explain yourself.
