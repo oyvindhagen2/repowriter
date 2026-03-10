@@ -48,6 +48,12 @@ python3 devto_publisher.py --push-all posts/my-project
 
 Pushes everything to Dev.to as drafts. A state file tracks article IDs so you can run this repeatedly without creating duplicates. Add `--live` to publish immediately.
 
+```bash
+python3 devto_preview.py --dir posts/my-project
+```
+
+Starts a local preview server at `localhost:4242`. Renders your articles exactly as Dev.to would — cover image, series label, tag pills, syntax-highlighted code, and all Liquid tags (`{% card %}`, `{% details %}`, `{% cta %}`). Live reloads on save. No internet required.
+
 ---
 
 ## The pipeline, honestly
@@ -135,6 +141,24 @@ python3 devto_publisher.py --push-all posts/my-project         # drafts
 python3 devto_publisher.py --push-all posts/my-project --live  # publish
 python3 devto_publisher.py --pull-all posts/my-project         # sync from Dev.to
 ```
+
+### Preview locally
+
+```bash
+python3 devto_preview.py --dir posts/my-project
+python3 devto_preview.py --dir posts/my-project --port 4243    # custom port
+```
+
+Opens `http://localhost:4242` in your browser. Shows an index of all articles; click any to see the rendered preview. Edit and save a `.md` file — the browser reloads automatically.
+
+Renders:
+- Cover image, series label, tag pills
+- `{% card %}` callout boxes
+- `{% details %}` collapsible sections
+- `{% cta %}` CTA buttons
+- Fenced code blocks with syntax highlighting (highlight.js)
+
+No internet required after the first load (highlight.js is fetched from cdnjs once and cached by the browser).
 
 ---
 
