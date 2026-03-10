@@ -13,6 +13,12 @@ import threading
 import time
 import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from socketserver import ThreadingMixIn
+
+
+class _ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+    """Handle each request in a separate thread."""
+    daemon_threads = True
 from pathlib import Path
 
 from preview.renderer import render
@@ -241,8 +247,7 @@ def serve(directory: str, port: int = 4242) -> None:
     directory = str(Path(directory).resolve())
 
     handler_cls = _make_handler(directory)
-    server = HTTPServer(("127.0.0.1", port), handler_cls)
-    server.daemon_threads = True  # SSE threads won't block shutdown
+    server = _ThreadedHTTPServer(("127.0.0.1", port), handler_cls)
 
     # File watcher in background
     watcher = threading.Thread(target=_watch, args=(directory,), daemon=True)

@@ -166,12 +166,12 @@ def _inline(text: str) -> str:
     )
 
     # Bold **text** or __text__
-    text = re.sub(r'\*\*(.+?)\*\*', lambda m: f"<strong>{_inline(m.group(1))}</strong>", text)
-    text = re.sub(r'__(.+?)__',     lambda m: f"<strong>{_inline(m.group(1))}</strong>", text)
+    text = re.sub(r'\*\*(.+?)\*\*', lambda m: f"<strong>{m.group(1)}</strong>", text)
+    text = re.sub(r'__(.+?)__',     lambda m: f"<strong>{m.group(1)}</strong>", text)
 
     # Italic *text* or _text_  (must come after bold)
-    text = re.sub(r'\*([^*\n]+?)\*', lambda m: f"<em>{_inline(m.group(1))}</em>", text)
-    text = re.sub(r'_([^_\n]+?)_',   lambda m: f"<em>{_inline(m.group(1))}</em>", text)
+    text = re.sub(r'\*([^*\n]+?)\*', lambda m: f"<em>{m.group(1)}</em>", text)
+    text = re.sub(r'_([^_\n]+?)_',   lambda m: f"<em>{m.group(1)}</em>", text)
 
     # Restore inline-code tokens
     def restore_code(m: re.Match) -> str:
