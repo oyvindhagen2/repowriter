@@ -6,7 +6,7 @@ Not because they weren't proud of them. Not because they didn't have anything to
 
 `writer` is an attempt to close that gap. Point it at any git repository. It reads your commit history — the actual record of decisions made, directions changed, things that didn't work — and turns it into a multi-part narrative series. Then it generates cover images. Then it publishes everything to Dev.to, with state tracking so reruns don't create duplicates.
 
-Your commits already tell a story. This just writes it down.
+Your commits already tell a story. This just writes it down. For example, it wrote this readme.
 
 ---
 
