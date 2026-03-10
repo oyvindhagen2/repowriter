@@ -1,4 +1,62 @@
+# ── Credentials & secrets ─────────────────────────────────────────────────────
 .env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+credentials/
+.credentials/
+
+# ── Article content & state ───────────────────────────────────────────────────
 posts/
+series_plan.json
+devto_state.json
+covers/
+
+# ── Local config ──────────────────────────────────────────────────────────────
+.writer_config
+config.local.*
+
+# ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+pip-wheel-metadata/
+.venv/
+venv/
+env/
+.python-version
+
+# ── OS & editor ───────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+desktop.ini
+.Spotlight-V100
+.Trashes
+
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# ── Logs & temp ───────────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.bak
+*.orig
+/tmp/
